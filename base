@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Stock - MercadoLibre</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Control de Stock - MercadoLibre</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Producto</th>
+                <th>Stock</th>
+            </tr>
+        </thead>
+        <tbody id="stockTable">
+            <!-- Los datos se cargarán aquí dinámicamente -->
+        </tbody>
+    </table>
+    <button onclick="actualizarStock()">Actualizar Stock</button>
+
+    <script>
+        async function actualizarStock() {
+            try {
+                let response = await fetch('https://api.mercadolibre.com/YOUR_ENDPOINT'); // Reemplazar con API real
+                let data = await response.json();
+                let tableBody = document.getElementById('stockTable');
+                tableBody.innerHTML = '';
+                data.forEach(item => {
+                    let row = `<tr>
+                        <td>${item.sku}</td>
+                        <td>${item.nombre}</td>
+                        <td>${item.stock}</td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error("Error al obtener datos", error);
+            }
+        }
+    </script>
+</body>
+</html>
