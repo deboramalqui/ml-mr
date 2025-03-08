@@ -54,7 +54,11 @@
     <script>
         async function actualizarStock() {
             try {
-                let response = await fetch('https://api.mercadolibre.com/YOUR_ENDPOINT'); // Reemplazar con API real
+                let response = await fetch('https://api.mercadolibre.com/items/MLA1907537586'); // Reemplazar con API real
+                headers: {
+        'Authorization': 'Bearer APP_USR-8126512474803100-030815-a67aad72c3076a13fe4ef96980ef5d75-1983391879'
+    }
+});
                 let data = await response.json();
                 let tableBody = document.getElementById('stockTable');
                 tableBody.innerHTML = '';
