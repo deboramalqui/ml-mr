@@ -54,24 +54,32 @@
     <script>
         async function actualizarStock() {
             try {
-                let response = await fetch('https://api.mercadolibre.com/items/MLA1907537586'); // Reemplazar con API real
-                headers: {
-        'Authorization': 'Bearer APP_USR-8126512474803100-030815-a67aad72c3076a13fe4ef96980ef5d75-1983391879'
-    }
-});
+                let response = await fetch('https://api.mercadolibre.com/items/MLA1907537586', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer APP_USR-8126512474803100-030815-a67aad72c3076a13fe4ef96980ef5d75-1983391879',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error en la solicitud a la API');
+                }
+
                 let data = await response.json();
                 let tableBody = document.getElementById('stockTable');
                 tableBody.innerHTML = '';
-                data.forEach(item => {
-                    let row = `<tr>
-                        <td>${item.sku}</td>
-                        <td>${item.nombre}</td>
-                        <td>${item.stock}</td>
-                    </tr>`;
-                    tableBody.innerHTML += row;
-                });
+
+                let row = `<tr>
+                    <td>${data.id}</td>
+                    <td>${data.title}</td>
+                    <td>${data.available_quantity}</td>
+                </tr>`;
+
+                tableBody.innerHTML = row;
+
             } catch (error) {
-                console.error("Error al obtener datos", error);
+                console.error("Error al obtener datos:", error);
             }
         }
     </script>
