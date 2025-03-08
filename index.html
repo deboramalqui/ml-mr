@@ -1,68 +1,132 @@
-<script>
-    const proxyUrl = "http://localhost:3000/"; // URL del servidor backend
 
-    async function actualizarStock() {
-        try {
-            let tableBody = document.getElementById("stockTable");
-            tableBody.innerHTML = '<tr><td colspan="3">Cargando productos...</td></tr>';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Stock - MercadoLibre</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Control de Stock - MercadoLibre</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Producto</th>
+                <th>Stock</th>
+            </tr>
+        </thead>
+        <tbody id="stockTable">
+            <!-- Aquí se cargarán los productos dinámicamente -->
+        </tbody>
+    </table>
+    <button onclick="actualizarStock()">Actualizar Stock</button>
 
-            // ✅ Obtener productos desde el servidor backend
-            let response = await fetch(`${proxyUrl}productos`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            });
+    <script>
+        const accessToken = "APP_USR-8126512474803100-030816-143738dd4f5680f738d9f2f5ec946115-1983391879"; // Reemplaza con tu token real
+        const userId = "1983391879"; // Reemplaza con tu ID de usuario real
+      const proxyUrl = "http://localhost:3000/";
 
-            if (!response.ok) {
-                throw new Error("Error al obtener productos");
-            }
+        async function actualizarStock() {
+            try {
+                let tableBody = document.getElementById("stockTable");
+                tableBody.innerHTML = '<tr><td colspan="3">Cargando productos...</td></tr>';
 
-            let data = await response.json();
-            let productIDs = data.results; // Lista de IDs obtenidos
-
-            if (productIDs.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="3">No hay productos activos</td></tr>';
-                return;
-            }
-
-            // ✅ Dividir los IDs en grupos de 20 (MercadoLibre permite máximo 20 por consulta)
-            let groups = [];
-            for (let i = 0; i < productIDs.length; i += 20) {
-                groups.push(productIDs.slice(i, i + 20));
-            }
-
-            // ✅ Obtener detalles de los productos en lotes de 20
-            let requests = groups.map(group => {
-                let ids = group.join(",");
-                return fetch(`${proxyUrl}productos/detalles?ids=${ids}`, {
+                // Obtener todos los productos automáticamente
+                let response = await fetch(`${proxyUrl}https://api.mercadolibre.com/users/${userId}/items/search?limit=50`, {
                     method: "GET",
-                    headers: { "Content-Type": "application/json" }
-                }).then(res => res.json());
-            });
-
-            let responses = await Promise.all(requests);
-
-            // ✅ Limpiar la tabla antes de mostrar los productos
-            tableBody.innerHTML = "";
-
-            // ✅ Mostrar los productos obtenidos
-            responses.forEach(products => {
-                products.forEach(item => {
-                    if (item.body && item.body.id) {
-                        let row = `<tr>
-                            <td>${item.body.id}</td>
-                            <td>${item.body.title}</td>
-                            <td>${item.body.available_quantity}</td>
-                        </tr>`;
-                        tableBody.innerHTML += row;
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`,
+                        "Content-Type": "application/json"
                     }
                 });
-            });
 
-        } catch (error) {
-            console.error("Error al obtener datos:", error);
-            document.getElementById("stockTable").innerHTML = `<tr><td colspan="3" style="color: red;">Error al obtener productos</td></tr>`;
+                if (!response.ok) {
+                    throw new Error("Error al obtener productos");
+                }
+
+                let data = await response.json();
+                let productIDs = data.results; // Lista de IDs obtenidos
+
+                if (productIDs.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="3">No hay productos activos</td></tr>';
+                    return;
+                }
+
+                // Dividir los IDs en grupos de 20
+                let groups = [];
+                for (let i = 0; i < productIDs.length; i += 20) {
+                    groups.push(productIDs.slice(i, i + 20));
+                }
+
+                // Hacer múltiples solicitudes para obtener detalles de los productos
+                let requests = groups.map(group => {
+                    let ids = group.join(",");
+                    return fetch(`${proxyUrl}https://api.mercadolibre.com/items?ids=${ids}`, {
+                        method: "GET",
+                        headers: {
+                            "Authorization": `Bearer ${accessToken}`,
+                            "Content-Type": "application/json"
+                        }
+                    }).then(res => res.json());
+                });
+
+                let responses = await Promise.all(requests);
+
+                // Limpiar la tabla antes de agregar nuevos productos
+                tableBody.innerHTML = "";
+
+                // Mostrar todos los productos obtenidos
+                responses.forEach(products => {
+                    Object.values(products).forEach(item => {
+                        if (item.body && item.body.id) { // Verificamos que el producto tenga datos
+                            let row = `<tr>
+                                <td>${item.body.id}</td>
+                                <td>${item.body.title}</td>
+                                <td>${item.body.available_quantity}</td>
+                            </tr>`;
+                            tableBody.innerHTML += row;
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error al obtener datos:", error);
+                document.getElementById("stockTable").innerHTML = `<tr><td colspan="3" style="color: red;">Error al obtener productos</td></tr>`;
+            }
         }
-    }
-</script>
+    </script>
+</body>
+</html>
+
+
