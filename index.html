@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -41,7 +40,8 @@
     <table>
         <thead>
             <tr>
-                <th>SKU</th>
+                <th>SKU de Mercadotech</th>
+                <th>SKU de MercadoLibre</th>
                 <th>Producto</th>
                 <th>Stock</th>
             </tr>
@@ -60,7 +60,7 @@
     async function actualizarStock() {
         try {
             let tableBody = document.getElementById("stockTable");
-            tableBody.innerHTML = '<tr><td colspan="3">Cargando productos...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4">Cargando productos...</td></tr>';
 
             // Obtener todos los productos automáticamente
             let response = await fetch(`${proxyUrl}productos`, {  // Aquí corregimos
@@ -78,7 +78,7 @@
             let productIDs = data.results; // Lista de IDs obtenidos
 
             if (productIDs.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="3">No hay productos activos</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="4">No hay productos activos</td></tr>';
                 return;
             }
 
@@ -106,7 +106,9 @@
             responses.forEach(products => {
                 products.forEach(item => {
                     if (item.body && item.body.id) {
+                        let skuMercadotech = item.body.sku_mercadotech || "No disponible"; // Agrega el SKU de Mercadotech si está disponible
                         let row = `<tr>
+                            <td>${skuMercadotech}</td>
                             <td>${item.body.id}</td>
                             <td>${item.body.title}</td>
                             <td>${item.body.available_quantity}</td>
@@ -118,7 +120,7 @@
 
         } catch (error) {
             console.error("Error al obtener datos:", error);
-            document.getElementById("stockTable").innerHTML = `<tr><td colspan="3" style="color: red;">Error al obtener productos</td></tr>`;
+            document.getElementById("stockTable").innerHTML = `<tr><td colspan="4" style="color: red;">Error al obtener productos</td></tr>`;
         }
     }
 </script>
