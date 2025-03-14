@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,18 +11,23 @@
             text-align: center;
             margin: 20px;
         }
+
         table {
             width: 80%;
             margin: 20px auto;
             border-collapse: collapse;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ddd;
             padding: 10px;
         }
+
         th {
             background-color: #f4f4f4;
         }
+
         button {
             padding: 10px 20px;
             margin: 10px;
@@ -30,18 +36,49 @@
             border: none;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #0056b3;
         }
+
+        input[type="text"],
+        input[type="number"] {
+            padding: 8px;
+            margin: 8px 0;
+            width: 200px;
+            text-align: center;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        #responseMessage {
+            margin-top: 20px;
+            font-size: 18px;
+        }
     </style>
 </head>
+
 <body>
     <h1>Control de Stock - MercadoLibre</h1>
+
+    <!-- Formulario para actualizar el stock -->
+    <form id="stockForm">
+        <label for="sku">SKU de Mercadotech:</label>
+        <input type="text" id="sku" name="sku" required>
+        <label for="stock">Nuevo stock:</label>
+        <input type="number" id="stock" name="stock" required>
+        <button type="submit">Actualizar Stock</button>
+    </form>
+
+    <div id="responseMessage"></div>
+
     <table>
         <thead>
             <tr>
                 <th>SKU de Mercadotech</th>
-                <th>SKU de MercadoLibre (MLA)</th>
+                <th>SKU de MercadoLibre</th>
                 <th>Producto</th>
                 <th>Stock</th>
             </tr>
@@ -50,18 +87,19 @@
             <!-- Aquí se cargarán los productos dinámicamente -->
         </tbody>
     </table>
+
     <button onclick="actualizarStock()">Actualizar Stock</button>
 
     <script>
-        const proxyUrl = "http://localhost:3000/"; // URL de tu servidor
+        const proxyUrl = "http://localhost:3000/";
 
+        // Función para obtener productos y mostrarlos en la tabla
         async function actualizarStock() {
             try {
                 let tableBody = document.getElementById("stockTable");
-                tableBody.innerHTML = '<tr><td colspan="4">Cargando productos...</td></tr>'; // Mensaje de carga
+                tableBody.innerHTML = '<tr><td colspan="4">Cargando productos...</td></tr>';
 
-                // Obtener todos los productos automáticamente
-                let response = await fetch(`${proxyUrl}productos`, {  
+                let response = await fetch(`${proxyUrl}productos`, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json"
@@ -86,7 +124,6 @@
                     groups.push(productIDs.slice(i, i + 20));
                 }
 
-                // Hacer múltiples solicitudes para obtener detalles de los productos
                 let requests = groups.map(group => {
                     let ids = group.join(",");
                     return fetch(`${proxyUrl}productos/detalles?ids=${ids}`, {
@@ -97,35 +134,62 @@
 
                 let responses = await Promise.all(requests);
 
-                // Limpiar la tabla antes de mostrar los productos
                 tableBody.innerHTML = "";
 
-                // Mostrar todos los productos obtenidos
-                let rows = ''; // Usamos una variable para almacenar todas las filas
                 responses.forEach(products => {
                     products.forEach(item => {
                         if (item.body && item.body.id) {
-                            // Verificamos si el SKU de Mercadotech (value_name) está presente
-                            let skuMercadotech = item.body.value_name || "No disponible"; 
-                            let skuMercadolibre = item.body.id || "No disponible"; // SKU de MercadoLibre (MLA)
+                            let skuMercadotech = item.body.value_name || "No disponible";
+                            let skuMercadolibre = item.body.id || "No disponible";
                             let row = `<tr>
                                         <td>${skuMercadotech}</td>
                                         <td>${skuMercadolibre}</td>
                                         <td>${item.body.title}</td>
                                         <td>${item.body.available_quantity}</td>
                                     </tr>`;
-                            rows += row; // Concatenamos las filas en el string
+                            tableBody.innerHTML += row;
                         }
                     });
                 });
-
-                tableBody.innerHTML = rows; // Añadimos todas las filas al final
-
             } catch (error) {
                 console.error("Error al obtener datos:", error);
-                tableBody.innerHTML = `<tr><td colspan="4" style="color: red;">Error al obtener productos</td></tr>`;
+                document.getElementById("stockTable").innerHTML = `<tr><td colspan="4" style="color: red;">Error al obtener productos</td></tr>`;
             }
         }
+
+        // Función para manejar el envío del formulario de actualización de stock
+        document.getElementById("stockForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const sku = document.getElementById("sku").value;
+            const stock = document.getElementById("stock").value;
+            const responseMessage = document.getElementById("responseMessage");
+            responseMessage.innerHTML = "Actualizando...";
+
+            try {
+                const response = await fetch(`${proxyUrl}actualizar-stock`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        sku: sku,
+                        stock: stock
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    responseMessage.innerHTML = `Stock actualizado exitosamente: ${JSON.stringify(data)}`;
+                } else {
+                    responseMessage.innerHTML = `Error: ${data.error} - ${data.details}`;
+                }
+            } catch (error) {
+                responseMessage.innerHTML = `Error al actualizar stock: ${error.message}`;
+            }
+        });
+
     </script>
+
 </body>
+
 </html>
