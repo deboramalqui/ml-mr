@@ -103,27 +103,21 @@
                 tableBody.innerHTML = "";
 
                 // Mostrar todos los productos obtenidos
-                responses.forEach(response => {
-                    // Verifica que response sea un array
-                    if (Array.isArray(response)) {
-                        response.forEach(item => {
-                            if (item.body && item.body.id) {
-                                let skuMercadotech = item.body.value_name || "No disponible"; 
-                                let skuMercadolibre = item.body.id || "No disponible"; // SKU de MercadoLibre (MLA)
-                                let row = `<tr>
-                                            <td>${skuMercadotech}</td>
-                                            <td>${skuMercadolibre}</td>
-                                            <td>${item.body.title}</td>
-                                            <td>${item.body.available_quantity}</td>
-                                            <td><button onclick="actualizarStockProducto('${skuMercadotech}', ${item.body.available_quantity})">Actualizar Stock</button></td>
-                                        </tr>`;
-                                tableBody.innerHTML += row; // Añadimos la fila a la tabla
-                            }
-                        });
-                    } else {
-                        console.error("La respuesta no es un array:", response);
-                        tableBody.innerHTML = `<tr><td colspan="5" style="color: red;">Error al obtener productos</td></tr>`;
-                    }
+                responses.forEach(products => {
+                    products.forEach(item => {
+                        if (item.body && item.body.id) {
+                            let skuMercadotech = item.body.value_name || "No disponible"; 
+                            let skuMercadolibre = item.body.id || "No disponible"; // SKU de MercadoLibre (MLA)
+                            let row = `<tr>
+                                        <td>${skuMercadotech}</td>
+                                        <td>${skuMercadolibre}</td>
+                                        <td>${item.body.title}</td>
+                                        <td>${item.body.available_quantity}</td>
+                                        <td><button onclick="actualizarStockProducto('${skuMercadotech}', ${item.body.available_quantity})">Actualizar Stock</button></td>
+                                    </tr>`;
+                            tableBody.innerHTML += row; // Añadimos la fila a la tabla
+                        }
+                    });
                 });
 
             } catch (error) {
@@ -137,7 +131,7 @@
 
             if (newStock === null) return; // Si el usuario cancela, no hacer nada.
 
-            // Hacer la solicitud POST para actualizar el stock
+            // Hacer la solicitud PUT para actualizar el stock
             try {
                 const response = await fetch(`${proxyUrl}productos/actualizar`, {
                     method: "PUT",
