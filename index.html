@@ -40,8 +40,8 @@
     <table>
         <thead>
             <tr>
-                <th>SKU</th>
-                <th>MLA</th>
+                <th>SKU de Mercadotech</th>
+                <th>SKU de MercadoLibre (MLA)</th>
                 <th>Producto</th>
                 <th>Stock</th>
             </tr>
@@ -52,78 +52,80 @@
     </table>
     <button onclick="actualizarStock()">Actualizar Stock</button>
 
-   <script>
-    const accessToken = "APP_USR-8126512474803100-030816-143738dd4f5680f738d9f2f5ec946115-1983391879"; // Reemplaza con tu token real
-    const userId = "1983391879"; // Reemplaza con tu ID de usuario real
-    const proxyUrl = "http://localhost:3000/";
+    <script>
+        const proxyUrl = "http://localhost:3000/"; // URL de tu servidor
 
-    async function actualizarStock() {
-        try {
-            let tableBody = document.getElementById("stockTable");
-            tableBody.innerHTML = '<tr><td colspan="4">Cargando productos...</td></tr>';
+        async function actualizarStock() {
+            try {
+                let tableBody = document.getElementById("stockTable");
+                tableBody.innerHTML = '<tr><td colspan="4">Cargando productos...</td></tr>'; // Mensaje de carga
 
-            // Obtener todos los productos automáticamente
-            let response = await fetch(`${proxyUrl}productos`, {  // Aquí corregimos
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error("Error al obtener productos");
-            }
-
-            let data = await response.json();
-            let productIDs = data.results; // Lista de IDs obtenidos
-
-            if (productIDs.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="4">No hay productos activos</td></tr>';
-                return;
-            }
-
-            // Dividir los IDs en grupos de 20 (MercadoLibre permite máximo 20 por consulta)
-            let groups = [];
-            for (let i = 0; i < productIDs.length; i += 20) {
-                groups.push(productIDs.slice(i, i + 20));
-            }
-
-            // Hacer múltiples solicitudes para obtener detalles de los productos
-            let requests = groups.map(group => {
-                let ids = group.join(",");
-                return fetch(`${proxyUrl}productos/detalles?ids=${ids}`, {  // Aquí corregimos
+                // Obtener todos los productos automáticamente
+                let response = await fetch(`${proxyUrl}productos`, {  
                     method: "GET",
-                    headers: { "Content-Type": "application/json" }
-                }).then(res => res.json());
-            });
-
-            let responses = await Promise.all(requests);
-
-            // Limpiar la tabla antes de mostrar los productos
-            tableBody.innerHTML = "";
-
-            // Mostrar todos los productos obtenidos
-            responses.forEach(products => {
-                products.forEach(item => {
-                    if (item.body && item.body.id) {
-                        let skuMercadotech = item.body.value_name || "No disponible"; // Agrega el SKU de Mercadotech si está disponible
-                        let skuMercadolibre = item.body.id || "No disponible"; // Agrega el SKU de MercadoLibre
-                        let row = `<tr>
-                            <td>${skuMercadotech}</td>
-                            <td>${skuMercadolibre}</td>
-                            <td>${item.body.title}</td>
-                            <td>${item.body.available_quantity}</td>
-                        </tr>`;
-                        tableBody.innerHTML += row;
+                    headers: {
+                        "Content-Type": "application/json"
                     }
                 });
-            });
 
-        } catch (error) {
-            console.error("Error al obtener datos:", error);
-            document.getElementById("stockTable").innerHTML = `<tr><td colspan="4" style="color: red;">Error al obtener productos</td></tr>`;
+                if (!response.ok) {
+                    throw new Error("Error al obtener productos");
+                }
+
+                let data = await response.json();
+                let productIDs = data.results; // Lista de IDs obtenidos
+
+                if (productIDs.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4">No hay productos activos</td></tr>';
+                    return;
+                }
+
+                // Dividir los IDs en grupos de 20 (MercadoLibre permite máximo 20 por consulta)
+                let groups = [];
+                for (let i = 0; i < productIDs.length; i += 20) {
+                    groups.push(productIDs.slice(i, i + 20));
+                }
+
+                // Hacer múltiples solicitudes para obtener detalles de los productos
+                let requests = groups.map(group => {
+                    let ids = group.join(",");
+                    return fetch(`${proxyUrl}productos/detalles?ids=${ids}`, {
+                        method: "GET",
+                        headers: { "Content-Type": "application/json" }
+                    }).then(res => res.json());
+                });
+
+                let responses = await Promise.all(requests);
+
+                // Limpiar la tabla antes de mostrar los productos
+                tableBody.innerHTML = "";
+
+                // Mostrar todos los productos obtenidos
+                let rows = ''; // Usamos una variable para almacenar todas las filas
+                responses.forEach(products => {
+                    products.forEach(item => {
+                        if (item.body && item.body.id) {
+                            // Verificamos si el SKU de Mercadotech (value_name) está presente
+                            let skuMercadotech = item.body.value_name || "No disponible"; 
+                            let skuMercadolibre = item.body.id || "No disponible"; // SKU de MercadoLibre (MLA)
+                            let row = `<tr>
+                                        <td>${skuMercadotech}</td>
+                                        <td>${skuMercadolibre}</td>
+                                        <td>${item.body.title}</td>
+                                        <td>${item.body.available_quantity}</td>
+                                    </tr>`;
+                            rows += row; // Concatenamos las filas en el string
+                        }
+                    });
+                });
+
+                tableBody.innerHTML = rows; // Añadimos todas las filas al final
+
+            } catch (error) {
+                console.error("Error al obtener datos:", error);
+                tableBody.innerHTML = `<tr><td colspan="4" style="color: red;">Error al obtener productos</td></tr>`;
+            }
         }
-    }
-</script>
+    </script>
 </body>
 </html>
