@@ -106,10 +106,11 @@
             responses.forEach(products => {
                 products.forEach(item => {
                     if (item.body && item.body.id) {
-                        let skuMercadotech = item.body.sku_mercadotech || "No disponible"; // Agrega el SKU de Mercadotech si está disponible
+                        let skuMercadotech = item.body.value_name || "No disponible"; // Agrega el SKU de Mercadotech si está disponible
+                        let skuMercadolibre = item.body.id || "No disponible"; // Agrega el SKU de MercadoLibre
                         let row = `<tr>
                             <td>${skuMercadotech}</td>
-                            <td>${item.body.id}</td>
+                            <td>${skuMercadolibre}</td>
                             <td>${item.body.title}</td>
                             <td>${item.body.available_quantity}</td>
                         </tr>`;
