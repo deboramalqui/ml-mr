@@ -57,106 +57,55 @@
     <script>
         const proxyUrl = "http://localhost:3000/";
 
-        async function actualizarStock() {
-            try {
-                let tableBody = document.getElementById("stockTable");
-                tableBody.innerHTML = '<tr><td colspan="5">Cargando productos...</td></tr>';
+     async function actualizarStock() {
+    try {
+        let tableBody = document.getElementById("stockTable");
+        tableBody.innerHTML = '<tr><td colspan="5">Cargando productos...</td></tr>';
 
-                // Obtener todos los productos automáticamente
-                let response = await fetch(`${proxyUrl}productos`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error("Error al obtener productos");
-                }
-
-                let data = await response.json();
-                let productIDs = data.results; // Lista de IDs obtenidos
-
-                if (productIDs.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="5">No hay productos activos</td></tr>';
-                    return;
-                }
-
-                // Dividir los IDs en grupos de 20 (MercadoLibre permite máximo 20 por consulta)
-                let groups = [];
-                for (let i = 0; i < productIDs.length; i += 20) {
-                    groups.push(productIDs.slice(i, i + 20));
-                }
-
-                // Hacer múltiples solicitudes para obtener detalles de los productos
-                let requests = groups.map(group => {
-                    let ids = group.join(",");
-                    return fetch(`${proxyUrl}productos/detalles?ids=${ids}`, {
-                        method: "GET",
-                        headers: { "Content-Type": "application/json" }
-                    }).then(res => res.json());
-                });
-
-                let responses = await Promise.all(requests);
-
-                // Limpiar la tabla antes de mostrar los productos
-                tableBody.innerHTML = "";
-
-                // Mostrar todos los productos obtenidos
-                responses.forEach(products => {
-                    products.forEach(item => {
-                        if (item.body && item.body.id) {
-                            let skuMercadotech = item.body.value_name || "No disponible"; 
-                            let skuMercadolibre = item.body.id || "No disponible"; // SKU de MercadoLibre (MLA)
-                            let row = `<tr>
-                                        <td>${skuMercadotech}</td>
-                                        <td>${skuMercadolibre}</td>
-                                        <td>${item.body.title}</td>
-                                        <td>${item.body.available_quantity}</td>
-                                        <td><button onclick="actualizarStockProducto('${skuMercadotech}', ${item.body.available_quantity})">Actualizar Stock</button></td>
-                                    </tr>`;
-                            tableBody.innerHTML += row; // Añadimos la fila a la tabla
-                        }
-                    });
-                });
-
-            } catch (error) {
-                console.error("Error al obtener datos:", error);
-                document.getElementById("stockTable").innerHTML = `<tr><td colspan="5" style="color: red;">Error al obtener productos</td></tr>`;
+        // Obtener los productos completos directamente
+        let response = await fetch(`${proxyUrl}productos`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
             }
+        });
+
+        if (!response.ok) {
+            throw new Error("Error al obtener productos");
         }
 
-        async function actualizarStockProducto(sku, currentStock) {
-            const newStock = prompt(`¿Cuánto stock deseas establecer para el SKU: ${sku}?`, currentStock);
+        let products = await response.json(); // Aquí ya obtenemos productos completos, no solo IDs
 
-            if (newStock === null) return; // Si el usuario cancela, no hacer nada.
-
-            // Hacer la solicitud PUT para actualizar el stock
-            try {
-                const response = await fetch(`${proxyUrl}productos/actualizar`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        id: sku,
-                        stock: newStock
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error("Error al actualizar el stock");
-                }
-
-                const result = await response.json();
-                alert(`Stock actualizado para SKU ${sku}. Nuevo stock: ${result.available_quantity}`);
-                actualizarStock(); // Actualizamos la tabla con los productos más recientes.
-
-            } catch (error) {
-                console.error("Error al actualizar stock:", error);
-                alert("Error al actualizar el stock. Por favor, intente de nuevo.");
-            }
+        // **Verificación de seguridad antes de usar products.length**
+        if (!Array.isArray(products) || products.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5">No hay productos activos</td></tr>';
+            return;
         }
+
+        // Limpiar la tabla antes de mostrar los productos
+        tableBody.innerHTML = "";
+
+        // Mostrar todos los productos obtenidos
+        products.forEach(item => {
+            if (item.id) { // Asegurar que el producto tiene un ID válido
+                let skuMercadotech = item.attributes?.find(attr => attr.id === "SELLER_SKU")?.value_name || "No disponible"; 
+                let skuMercadolibre = item.id || "No disponible"; // SKU de MercadoLibre (MLA)
+                let row = `<tr>
+                            <td>${skuMercadotech}</td>
+                            <td>${skuMercadolibre}</td>
+                            <td>${item.title}</td>
+                            <td>${item.available_quantity}</td>
+                            <td><button onclick="actualizarStockProducto('${skuMercadotech}', ${item.available_quantity})">Actualizar Stock</button></td>
+                        </tr>`;
+                tableBody.innerHTML += row; // Añadimos la fila a la tabla
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ Error al obtener datos:", error);
+        document.getElementById("stockTable").innerHTML = `<tr><td colspan="5" style="color: red;">Error al obtener productos</td></tr>`;
+    }
+}
     </script>
 </body>
 </html>
